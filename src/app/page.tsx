@@ -3,13 +3,18 @@
 
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { TONES, TOPICS } from "@/lib/options";
 
 export default function Home() {
   const [answer, setAnswer] = useState("");
   const [feedback, setFeedback] = useState("");
   const [loading, setLoading] = useState(false);
-  const [tone, setTone] = useState("やさしめ");
-  const [topic, setTopic] = useState("自己紹介を1分で");
+  const [tone, setTone] = useState(TONES[0]);
+  const [topic, setTopic] = useState(TOPICS[0]);
+
+  // 未入力のまま送信させない（同じチェックはサーバー側にもある。
+  // こっちは「親切」のため、サーバー側は「防御」のため）
+  const canSubmit = !loading && answer.trim() !== "";
 
   async function handleSubmit() {
     setLoading(true);
@@ -24,8 +29,19 @@ export default function Home() {
         body: JSON.stringify({ topic, answer, tone }),
       });
       const data = await res.json();
+
+      // 通信自体は成功しても、API側がエラーを返していることがある。
+      // res.ok を見ないと「失敗したのに成功したように見える」状態になる
+      if (!res.ok) {
+        setFeedback(
+          data.feedback ?? "エラーが起きました。もう一度お試しください。",
+        );
+        return; // return しても finally は必ず動くので loading は解除される
+      }
+
       setFeedback(
-        data.feedback ?? "エラーが起きました。もう一度お試しください。",
+        data.feedback ??
+          "フィードバックを受け取れませんでした。もう一度お試しください。",
       );
     } catch {
       setFeedback("通信に失敗しました。ネットワークを確認してください。");
@@ -51,10 +67,11 @@ export default function Home() {
           onChange={(e) => setTopic(e.target.value)}
           className="max-w-full rounded-none border-0 border-b-2 border-dashed border-gray-300 bg-transparent py-1 text-base focus:outline-none"
         >
-          <option value="自己紹介を1分で">自己紹介を1分で</option>
-          <option value="志望動機">志望動機</option>
-          <option value="自分の強み">自分の強み</option>
-          <option value="転職理由">転職理由</option>
+          {TOPICS.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -62,6 +79,7 @@ export default function Home() {
         value={answer}
         onChange={(e) => setAnswer(e.target.value)}
         rows={6}
+        aria-label="回答"
         className="mt-5 w-full resize-none rounded-sm border-2 border-dashed border-gray-300 p-3 text-left text-lg leading-8 outline-none placeholder:text-gray-700/40 focus:outline-none"
         placeholder="ここに回答を書く"
       />
@@ -79,15 +97,17 @@ export default function Home() {
           onChange={(e) => setTone(e.target.value)}
           className="max-w-full rounded-none border-0 border-b-2 border-dashed border-gray-300 bg-transparent py-1 text-base focus:outline-none"
         >
-          <option value="やさしめ">やさしめ</option>
-          <option value="スパルタ">スパルタ</option>
-          <option value="ていねい">ていねい</option>
+          {TONES.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
         </select>
       </div>
 
       <button
         onClick={handleSubmit}
-        disabled={loading}
+        disabled={!canSubmit}
         className="mt-7 rounded-sm border-2 border-gray-600 bg-gray-300 px-6 py-2.5 text-sm font-semibold text-gray-700 focus:ring-2 focus:ring-gray-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
       >
         {loading ? "生成中…" : "コーチに見てもらう"}
