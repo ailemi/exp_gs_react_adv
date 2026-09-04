@@ -1,11 +1,18 @@
 // src/app/api/coach/route.ts
+import { TONES, TOPICS } from "@/lib/options";
+
 export async function POST(request: Request) {
-  const { topic, answer, smileScore } = await request.json();
+  const { topic, answer, tone, smileScore } = await request.json();
+
+  // 選択肢は許可リストで絞る（画面を通さず直接叩かれた時に
+  // 想定外の文字列がお願い文へ紛れ込むのを防ぐ）
+  const safeTopic = TOPICS.includes(topic) ? topic : TOPICS[0];
+  const safeTone = TONES.includes(tone) ? tone : TONES[0];
 
   const prompt = `あなたはプレゼン/面接の練習コーチです。
-次の「お題」に対する回答」を読んで、良かった点と改善点を、
-やさしく具体的に、200文字くらいで日本語でフィードバックしてください。
-お題: ${topic}
+「${safeTone}」な口調で、次の「お題」に対する「回答」を読んで、
+良かった点と改善点を、具体的に、200文字くらいで日本語でフィードバックしてください。
+お題: ${safeTopic}
 回答: ${answer}
 笑顔率: ${smileScore}%`;
 

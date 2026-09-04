@@ -3,6 +3,7 @@
 
 import { useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { TONES, TOPICS } from "@/lib/options";
 import FaceMeter from "./FaceMeter"; // ← ① 追加
 import Recorder from "./Recorder";
 
@@ -10,7 +11,8 @@ export default function Home() {
   const [answer, setAnswer] = useState("");
   const [feedback, setFeedback] = useState("");
   const [loading, setLoading] = useState(false);
-  const topic = "自己紹介を1分で";
+  const [topic, setTopic] = useState(TOPICS[0]);
+  const [tone, setTone] = useState(TONES[0]);
   const [smileScore, setSmileScore] = useState(0); // ← ② 追加
   // 読み上げの状態：待機 / 音声を準備中 / 再生中
   const [ttsState, setTtsState] = useState<"idle" | "loading" | "playing">(
@@ -25,7 +27,7 @@ export default function Home() {
     const res = await fetch("/api/coach", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ topic, answer, smileScore }),
+      body: JSON.stringify({ topic, answer, tone, smileScore }),
     });
     const data = await res.json();
     setFeedback(data.feedback);
@@ -87,18 +89,42 @@ export default function Home() {
 
       <div className="mt-6 flex flex-col items-center">
         <FaceMeter onScore={setSmileScore} />
-        <p className="mt-2 text-sm tracking-wide text-gray-700/60">
+        {/* 笑顔率を絵文字と色で出し分ける（70%以上=😄 / 40%以上=🙂 / それ未満=😐） */}
+        <p
+          className={`mt-2 flex items-center gap-2 text-sm font-semibold tracking-wide ${
+            smileScore >= 70
+              ? "text-green-600"
+              : smileScore >= 40
+                ? "text-amber-600"
+                : "text-gray-500"
+          }`}
+        >
+          <span className="text-2xl leading-none">
+            {smileScore >= 70 ? "😄" : smileScore >= 40 ? "🙂" : "😐"}
+          </span>
           いまの笑顔率：{smileScore}%
         </p>
       </div>
 
       <div className="mt-6 flex items-center justify-center gap-3">
-        <span className="shrink-0 text-sm tracking-wide text-gray-700/60">
+        <label
+          htmlFor="topic"
+          className="shrink-0 text-sm tracking-wide text-gray-700/60"
+        >
           お題
-        </span>
-        <span className="border-b-2 border-dashed border-gray-300 py-1 text-base">
-          {topic}
-        </span>
+        </label>
+        <select
+          id="topic"
+          value={topic}
+          onChange={(e) => setTopic(e.target.value)}
+          className="max-w-full rounded-none border-0 border-b-2 border-dashed border-gray-300 bg-transparent py-1 text-base focus:outline-none"
+        >
+          {TOPICS.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
       </div>
 
       <textarea
@@ -110,12 +136,33 @@ export default function Home() {
         placeholder="ここに回答を入力"
       />
 
-      <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+      <div className="mt-5 flex items-center justify-center gap-3">
+        <label
+          htmlFor="tone"
+          className="shrink-0 text-sm tracking-wide text-gray-700/60"
+        >
+          口調
+        </label>
+        <select
+          id="tone"
+          value={tone}
+          onChange={(e) => setTone(e.target.value)}
+          className="max-w-full rounded-none border-0 border-b-2 border-dashed border-gray-300 bg-transparent py-1 text-base focus:outline-none"
+        >
+          {TONES.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
         <Recorder onText={(t) => setAnswer(t)} />
         <button
           onClick={handleSubmit}
           disabled={loading}
-          className="rounded-sm border-2 border-gray-600 bg-gray-300 px-6 py-2.5 text-sm font-semibold text-gray-700 transition duration-200 enabled:cursor-pointer enabled:hover:-translate-y-0.5 enabled:hover:bg-gray-400 enabled:hover:shadow-md enabled:active:translate-y-0 enabled:active:shadow-none focus:ring-2 focus:ring-gray-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-sm border-2 border-gray-600 bg-gray-300 px-6 py-2.5 text-sm font-semibold text-gray-700 transition duration-200 focus:ring-2 focus:ring-gray-400 focus:outline-none enabled:cursor-pointer enabled:hover:-translate-y-0.5 enabled:hover:bg-gray-400 enabled:hover:shadow-md enabled:active:translate-y-0 enabled:active:shadow-none disabled:cursor-not-allowed disabled:opacity-40"
         >
           {loading ? "生成中…" : "コーチに見てもらう"}
         </button>
@@ -152,7 +199,7 @@ export default function Home() {
           <button
             onClick={speak}
             disabled={ttsState === "loading"}
-            className="mt-4 rounded-sm border-2 border-gray-600 bg-gray-300 px-6 py-2.5 text-sm font-semibold text-gray-700 transition duration-200 enabled:cursor-pointer enabled:hover:-translate-y-0.5 enabled:hover:bg-gray-400 enabled:hover:shadow-md enabled:active:translate-y-0 enabled:active:shadow-none focus:ring-2 focus:ring-gray-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+            className="mt-4 rounded-sm border-2 border-gray-600 bg-gray-300 px-6 py-2.5 text-sm font-semibold text-gray-700 transition duration-200 focus:ring-2 focus:ring-gray-400 focus:outline-none enabled:cursor-pointer enabled:hover:-translate-y-0.5 enabled:hover:bg-gray-400 enabled:hover:shadow-md enabled:active:translate-y-0 enabled:active:shadow-none disabled:cursor-not-allowed disabled:opacity-40"
           >
             {ttsState === "loading"
               ? "音声を準備中…"
