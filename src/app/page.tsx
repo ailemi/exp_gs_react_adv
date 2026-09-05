@@ -4,8 +4,10 @@
 import { useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { TONES, TOPICS } from "@/lib/options";
+import DeviceSettings from "./DeviceSettings";
 import FaceMeter from "./FaceMeter"; // ← ① 追加
 import Recorder from "./Recorder";
+import { useMediaDevices } from "./useMediaDevices";
 
 export default function Home() {
   const [answer, setAnswer] = useState("");
@@ -14,6 +16,8 @@ export default function Home() {
   const [topic, setTopic] = useState(TOPICS[0]);
   const [tone, setTone] = useState(TONES[0]);
   const [smileScore, setSmileScore] = useState(0); // ← ② 追加
+  // 使えるカメラ・マイクの一覧と、いま選んでいる機器
+  const devices = useMediaDevices();
   // 読み上げの状態：待機 / 音声を準備中 / 再生中
   const [ttsState, setTtsState] = useState<"idle" | "loading" | "playing">(
     "idle",
@@ -88,7 +92,7 @@ export default function Home() {
       <h1 className="text-3xl">AI練習コーチ</h1>
 
       <div className="mt-6 flex flex-col items-center">
-        <FaceMeter onScore={setSmileScore} />
+        <FaceMeter deviceId={devices.cameraId} onScore={setSmileScore} />
         {/* 笑顔率を絵文字と色で出し分ける（70%以上=😄 / 40%以上=🙂 / それ未満=😐） */}
         <p
           className={`mt-2 flex items-center gap-2 text-sm font-semibold tracking-wide ${
@@ -104,6 +108,7 @@ export default function Home() {
           </span>
           いまの笑顔率：{smileScore}%
         </p>
+        <DeviceSettings {...devices} />
       </div>
 
       <div className="mt-6 flex items-center justify-center gap-3">
@@ -158,7 +163,7 @@ export default function Home() {
       </div>
 
       <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-        <Recorder onText={(t) => setAnswer(t)} />
+        <Recorder deviceId={devices.micId} onText={(t) => setAnswer(t)} />
         <button
           onClick={handleSubmit}
           disabled={loading}
