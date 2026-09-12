@@ -19,10 +19,11 @@ export async function POST(request: Request) {
 
   await db.insert(sessions).values({
     userId,
-    topic: body.topic,  //useDtateの各値
+    topic: body.topic, //useDtateの各値
     answerText: body.answer,
     smileScore: body.smileScore,
     feedback: body.feedback,
+    memo: body.memo,
   });
 
   return Response.json({ ok: true });

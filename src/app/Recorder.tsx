@@ -2,6 +2,7 @@
 // src/app/Recorder.tsx
 
 import { useRef, useState } from "react";
+import { BUTTON_CLASS } from "@/lib/styles";
 
 // ブラウザが録音できる形式を選ぶ（Chrome系はwebm / Safariはmp4）
 function pickMimeType() {
@@ -15,9 +16,12 @@ function pickMimeType() {
 export default function Recorder({
   deviceId,
   onText,
+  onRecordingChange,
 }: {
   deviceId: string;
   onText: (t: string) => void;
+  // 録音の開始・終了を親に知らせる（話している間の笑顔率を測るのに使う）
+  onRecordingChange?: (recording: boolean) => void;
 }) {
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false); // 文字起こし中かどうか
@@ -98,6 +102,7 @@ export default function Recorder({
     recorder.start(1000);
     recorderRef.current = recorder;
     setRecording(true);
+    onRecordingChange?.(true);
   }
 
   function stopRec() {
@@ -106,6 +111,7 @@ export default function Recorder({
     // 停止直後にもう一度押せてしまうのを防ぐため、先に「文字にしています」へ切り替える
     setRecording(false);
     setTranscribing(true);
+    onRecordingChange?.(false);
     recorder.stop();
   }
 
@@ -113,7 +119,7 @@ export default function Recorder({
     <button
       onClick={recording ? stopRec : startRec}
       disabled={transcribing}
-      className="rounded-sm border-2 border-gray-600 bg-gray-300 px-6 py-2.5 text-sm font-semibold text-gray-700 transition duration-200 focus:ring-2 focus:ring-gray-400 focus:outline-none enabled:cursor-pointer enabled:hover:-translate-y-0.5 enabled:hover:bg-gray-400 enabled:hover:shadow-md enabled:active:translate-y-0 enabled:active:shadow-none disabled:cursor-not-allowed disabled:opacity-40"
+      className={BUTTON_CLASS}
     >
       {transcribing
         ? "文字にしています…"

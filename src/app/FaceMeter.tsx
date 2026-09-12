@@ -82,7 +82,9 @@ export default function FaceMeter({
       clearInterval(timer);
       stream?.getTracks().forEach((t) => t.stop());
     };
-    // onScore は常に setSmileScore を渡す（インライン関数にすると毎回カメラが再起動するので注意）
+    // ⚠️ onScore はカメラを起動した時のものが、そのまま使われ続ける。
+    //   渡す関数の中で useState の値を読むと「古い値」が見えるので注意。
+    //   （useRef の箱や、setXxx を呼ぶのは安全）
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deviceId]);
 

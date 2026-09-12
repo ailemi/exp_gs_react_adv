@@ -10,4 +10,5 @@ export const sessions = pgTable("sessions", {
   feedback: text("feedback"), // AIのフィードバック
   createdAt: timestamp("created_at").defaultNow().notNull(), // 作成日時
   category: text("category"), // カテゴリ
+  memo: text("memo"), // 自分用のメモ（書かなくてもよい）
 });

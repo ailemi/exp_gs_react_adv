@@ -6,3 +6,7 @@ export const TONES = ["やさしめ", "スパルタ", "ていねい"];
 
 // 回答の最大文字数。長文を投げられるとその分AIに課金されるので上限を決めておく
 export const MAX_ANSWER_LENGTH = 2000;
+
+// 文字起こしに送れる音声の大きさ（MB）。長すぎる音声はその分課金されるので上限を決めておく
+// 目安：10MBで20〜30分くらい
+export const MAX_AUDIO_MB = 10;

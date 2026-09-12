@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { LINK_CLASS, PAGE_CLASS } from "@/lib/styles";
 
 // APIから返ってくる記録1件分のデータの形
 type Session = {
@@ -63,13 +64,20 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true); // 読み込み中かどうか
   const [sort, setSort] = useState<Sort>("new"); // いま選ばれている並び順
   const [deletingId, setDeletingId] = useState<number | null>(null); // 削除中の記録のid
+  const [loadError, setLoadError] = useState(false); // 読み込みに失敗したか
 
   // 画面を開いたときに1回だけAPIから一覧を取ってくる
   useEffect(() => {
     async function load() {
-      const res = await fetch("/api/sessions");
-      const data = await res.json();
-      setRows(data);
+      // 通信やDBが落ちていても画面が固まらないように、失敗を受け止める
+      try {
+        const res = await fetch("/api/sessions");
+        if (!res.ok) throw new Error("読み込みに失敗しました");
+        setRows(await res.json());
+      } catch (e) {
+        console.error(e);
+        setLoadError(true);
+      }
       setLoading(false);
     }
     load();
@@ -99,38 +107,39 @@ export default function HistoryPage() {
   const sortedRows = sortSessions(rows, sort);
   const graphRows = sortSessions(rows, "old");
 
-  if (loading) {
-    return (
-      <main className="mx-auto w-full max-w-2xl py-6">
-        <p className="text-gray-500">読み込み中…</p>
-      </main>
-    );
-  }
-
   return (
-    <main className="mx-auto w-full max-w-2xl py-6">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold">練習の記録（{rows.length}件）</h1>
-        <Link href="/" className="text-sm text-blue-600 hover:underline">
-          ← 練習にもどる
-        </Link>
-      </div>
+    <main className={PAGE_CLASS}>
+      <h1 className="text-3xl">練習の記録</h1>
 
-      {rows.length === 0 ? (
-        <p className="rounded-xl bg-white p-6 text-center text-gray-500 shadow-sm">
+      <Link href="/" className={`${LINK_CLASS} mt-2`}>
+        ← 練習にもどる
+      </Link>
+
+      {loading ? (
+        <p className="mt-8 text-sm tracking-wide text-gray-700/60">
+          読み込み中…
+        </p>
+      ) : loadError ? (
+        <p className="mt-8 text-sm tracking-wide text-red-600">
+          記録を読み込めませんでした。ページを再読み込みしてください。
+        </p>
+      ) : rows.length === 0 ? (
+        <p className="mt-8 text-sm tracking-wide text-gray-700/60">
           まだありません。練習して「保存」しましょう。
         </p>
       ) : (
         <>
           {/* 笑顔スコアの推移グラフ（左が古い、右が新しい） */}
-          <div className="mb-4 rounded-xl bg-white p-4 shadow-sm">
-            <p className="mb-2 text-sm text-gray-500">😊 笑顔スコアの変化</p>
-            <div className="flex h-24 items-end gap-1">
+          <div className="mt-8 rounded-sm bg-sky-100 p-5 shadow-md">
+            <p className="text-left text-sm tracking-wide text-gray-700/60">
+              😊 平均の笑顔スコアの変化
+            </p>
+            <div className="mt-3 flex h-24 items-end gap-1">
               {graphRows.map((row) => (
                 <div
                   key={row.id}
                   title={`${formatDate(row.createdAt)}：${row.smileScore ?? 0}%`}
-                  className="w-4 rounded-t bg-blue-600"
+                  className="w-4 rounded-t-sm bg-sky-600"
                   // 高さだけは記録ごとに変わるので style で指定する
                   style={{ height: `${row.smileScore ?? 0}%` }}
                 />
@@ -138,17 +147,16 @@ export default function HistoryPage() {
             </div>
           </div>
 
-          {/* 並び替えボタン */}
-          <div className="mb-3 flex gap-2">
+          {/* 並び替えボタン。選ばれているものだけ枠を実線にする */}
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             {SORT_BUTTONS.map((button) => (
               <button
                 key={button.value}
                 onClick={() => setSort(button.value)}
                 className={
-                  // いま選ばれているボタンだけ色を濃くする
                   button.value === sort
-                    ? "rounded-full bg-blue-600 px-3 py-1 text-sm text-white"
-                    : "rounded-full bg-white px-3 py-1 text-sm text-gray-600 shadow-sm hover:bg-gray-50"
+                    ? "rounded-sm border-2 border-gray-600 bg-gray-300 px-4 py-1.5 text-sm font-semibold text-gray-700"
+                    : "cursor-pointer rounded-sm border-2 border-dashed border-gray-300 px-4 py-1.5 text-sm text-gray-700/60 transition duration-200 hover:border-gray-400 hover:text-gray-700"
                 }
               >
                 {button.label}
@@ -156,28 +164,31 @@ export default function HistoryPage() {
             ))}
           </div>
 
-          {/* 記録の一覧 */}
-          <ul className="flex flex-col gap-2">
+          {/* 記録の一覧（{rows.length}件） */}
+          <p className="mt-6 text-sm tracking-wide text-gray-700/60">
+            ぜんぶで {rows.length} 件
+          </p>
+          <ul className="mt-3 flex flex-col gap-3">
             {sortedRows.map((row) => (
               <li
                 key={row.id}
-                className="flex items-center gap-3 rounded-xl bg-white p-4 shadow-sm"
+                className="flex items-center gap-3 rounded-sm border-2 border-dashed border-gray-300 p-4 text-left"
               >
                 <Link href={`/history/${row.id}`} className="min-w-0 flex-1">
-                  <p className="text-xs text-gray-500">
+                  <p className="text-sm tracking-wide text-gray-700/60">
                     {formatDate(row.createdAt)}
                     {row.category ? ` ・ ${row.category}` : ""}
                   </p>
-                  <p className="truncate font-bold">{row.topic}</p>
-                  <p className="text-sm text-gray-600">
-                    😊 笑顔 {row.smileScore ?? 0}%
+                  <p className="truncate text-lg text-gray-700">{row.topic}</p>
+                  <p className="text-sm text-gray-700/60">
+                    😊 平均の笑顔 {row.smileScore ?? 0}%
                   </p>
                 </Link>
 
                 <button
                   onClick={() => handleDelete(row)}
                   disabled={deletingId === row.id}
-                  className="rounded-lg border border-gray-200 px-3 py-1 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+                  className="shrink-0 cursor-pointer rounded-sm border-2 border-dashed border-gray-300 px-3 py-1.5 text-sm text-gray-700/60 transition duration-200 hover:border-red-400 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {deletingId === row.id ? "削除中…" : "🗑 削除"}
                 </button>

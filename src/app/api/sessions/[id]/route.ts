@@ -18,9 +18,20 @@ export async function GET(
 
 // 1件 削除
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  // この画面から押された削除かどうかを確かめる。
+  // ログインを付けるまでの応急処置で、curlなどで直接消されるのを防ぐ。
+  const origin = request.headers.get("origin");
+  const host = request.headers.get("host");
+  if (!origin || new URL(origin).host !== host) {
+    return Response.json(
+      { error: "削除は画面の削除ボタンから行ってください。" },
+      { status: 403 },
+    );
+  }
+
   const { id } = await params;
   await db.delete(sessions).where(eq(sessions.id, Number(id)));
   return Response.json({ ok: true });
