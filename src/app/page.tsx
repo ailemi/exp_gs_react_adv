@@ -4,6 +4,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import FaceMeter from "./FaceMeter";
+import { useMediaDevices } from "./useMediaDevices";
 
 export default function Home() {
   const [answer, setAnswer] = useState("");
@@ -11,6 +12,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [smileScore, setSmileScore] = useState(0);
   const topic = "自己紹介を1分で";
+  // 使えるカメラ・マイクを調べる（cameraId に最初のカメラが入る）
+  const devices = useMediaDevices();
 
   async function handleSubmit() {
     setLoading(true);
@@ -39,7 +42,7 @@ export default function Home() {
       <h1>AI練習コーチ</h1>
       <Link href="/history">📖 履歴を見る</Link>
 
-      <FaceMeter onScore={setSmileScore} />
+      <FaceMeter deviceId={devices.cameraId} onScore={setSmileScore} />
       <p>いまの笑顔率：{smileScore}%</p>
 
       <p>お題：{topic}</p>
